@@ -1,0 +1,81 @@
+/* Main Window */
+QMainWindow {
+    background-color: palette(window);
+}
+
+/* Stat Widgets */
+.stat-widget {
+    background-color: palette(alternate-base);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 8px;
+}
+
+.stat-title {
+    color: palette(text);
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.stat-value {
+    color: palette(highlight);
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* Charts */
+QChartView {
+    background-color: palette(alternate-base);
+    border-radius: 8px;
+    margin: 8px;
+}
+
+/* Tabs */
+QTabWidget::pane {
+    border: none;
+    background-color: palette(base);
+    border-radius: 8px;
+}
+
+QTabBar::tab {
+    background-color: palette(alternate-base);
+    color: palette(text);
+    padding: 8px 16px;
+    margin: 4px;
+    border-radius: 4px;
+}
+
+QTabBar::tab:selected {
+    background-color: palette(highlight);
+    color: palette(highlighted-text);
+}
+
+/* Buttons */
+QPushButton {
+    background-color: palette(button);
+    color: palette(button-text);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+}
+
+QPushButton:hover {
+    background-color: palette(highlight);
+    color: palette(highlighted-text);
+}
+
+/* Menu */
+QMenu {
+    background-color: palette(window);
+    border: 1px solid palette(shadow);
+    border-radius: 4px;
+}
+
+QMenu::item {
+    padding: 6px 24px;
+}
+
+QMenu::item:selected {
+    background-color: palette(highlight);
+    color: palette(highlighted-text);
+} 

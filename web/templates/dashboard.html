@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Time Tracking Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <h1>Time Tracker</h1>
+        </div>
+        <div class="sidebar-menu">
+          <button class="menu-item active" data-section="dashboard">
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
+          </button>
+          <button class="menu-item" data-section="settings">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </button>
+          <button class="menu-item" data-section="backups">
+            <i class="fas fa-database"></i>
+            <span>Backups</span>
+          </button>
+        </div>
+        <div class="sidebar-footer">
+          <button id="themeToggle" class="theme-toggle">
+            <i class="fas fa-moon"></i>
+            <span>Dark Mode</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <div class="header">
+          <div class="date-range">
+            <input type="date" id="startDate" class="date-input" />
+            <span>to</span>
+            <input type="date" id="endDate" class="date-input" />
+            <button onclick="fetchDataByRange()" class="btn">
+              <i class="fas fa-sync-alt"></i>
+              Update
+            </button>
+          </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div class="section active" id="dashboard-section">
+          <div class="stats-container">
+            <div class="stat-card">
+              <i class="fas fa-clock"></i>
+              <div class="stat-content">
+                <h3>Total Time</h3>
+                <p id="totalTime">0h 0m</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <i class="fas fa-check-circle"></i>
+              <div class="stat-content">
+                <h3>Productive</h3>
+                <p id="productiveTime">0h 0m</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <i class="fas fa-times-circle"></i>
+              <div class="stat-content">
+                <h3>Unproductive</h3>
+                <p id="unproductiveTime">0h 0m</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="charts-container">
+            <div class="chart-container">
+              <div class="chart-header">
+                <h2>Productivity Distribution</h2>
+                <div class="chart-legend"></div>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="productivityChart"></canvas>
+              </div>
+            </div>
+            <div class="chart-container">
+              <div class="chart-header">
+                <h2>Top Applications</h2>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="categoryChart"></canvas>
+              </div>
+            </div>
+            <div class="chart-container">
+              <div class="chart-header">
+                <h2>Time Series</h2>
+              </div>
+              <div class="chart-wrapper">
+                <canvas id="timeSeriesChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div class="section" id="settings-section">
+          <div class="settings-container">
+            <div class="settings-card">
+              <h2><i class="fas fa-cog"></i> General Settings</h2>
+              <div class="settings-group">
+                <label>Theme</label>
+                <div class="theme-options">
+                  <button class="theme-option" data-theme="light">
+                    <i class="fas fa-sun"></i> Light
+                  </button>
+                  <button class="theme-option" data-theme="dark">
+                    <i class="fas fa-moon"></i> Dark
+                  </button>
+                  <button class="theme-option" data-theme="system">
+                    <i class="fas fa-desktop"></i> System
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-card">
+              <h2><i class="fas fa-database"></i> Database Management</h2>
+              <div class="settings-group">
+                <label>Backup Retention</label>
+                <div class="backup-controls">
+                  <select id="keepDays" class="select-input">
+                    <option value="7">Keep 7 days</option>
+                    <option value="14">Keep 14 days</option>
+                    <option value="30">Keep 30 days</option>
+                  </select>
+                  <button onclick="cleanupBackups()" class="btn btn-warning">
+                    <i class="fas fa-trash-alt"></i>
+                    Cleanup Old Backups
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-card">
+              <h2><i class="fas fa-user"></i> Account Settings</h2>
+              <div class="settings-group">
+                <button class="btn btn-danger">
+                  <i class="fas fa-user-minus"></i>
+                  Delete Account
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script>
+      // Theme handling
+      const themeToggle = document.getElementById("themeToggle");
+      const body = document.body;
+
+      // Check for saved theme preference
+      const savedTheme = localStorage.getItem("theme") || "light";
+      body.classList.add(savedTheme);
+      updateThemeIcon(savedTheme);
+
+      function updateThemeIcon(theme) {
+        const icon = themeToggle.querySelector("i");
+        const text = themeToggle.querySelector("span");
+        icon.className = theme === "dark" ? "fas fa-sun" : "fas fa-moon";
+        text.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
+      }
+
+      themeToggle.addEventListener("click", () => {
+        const isDark = body.classList.contains("dark");
+        const newTheme = isDark ? "light" : "dark";
+        body.classList.remove("light", "dark");
+        body.classList.add(newTheme);
+        localStorage.setItem("theme", newTheme);
+        updateThemeIcon(newTheme);
+      });
+
+      // Menu handling
+      const menuItems = document.querySelectorAll(".menu-item");
+      const sections = document.querySelectorAll(".section");
+
+      menuItems.forEach((item) => {
+        item.addEventListener("click", () => {
+          // Remove active class from all items and sections
+          menuItems.forEach((i) => i.classList.remove("active"));
+          sections.forEach((s) => s.classList.remove("active"));
+
+          // Add active class to clicked item and corresponding section
+          item.classList.add("active");
+          const sectionId = `${item.dataset.section}-section`;
+          document.getElementById(sectionId).classList.add("active");
+        });
+      });
+
+      // Notification system
+      function showNotification(message, type = "info") {
+        const container = document.getElementById("notificationContainer");
+        const notification = document.createElement("div");
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+          <div class="notification-content">
+            <i class="fas ${
+              type === "success"
+                ? "fa-check-circle"
+                : type === "error"
+                ? "fa-exclamation-circle"
+                : "fa-info-circle"
+            }"></i>
+            <span>${message}</span>
+          </div>
+          <button class="notification-close">&times;</button>
+        `;
+
+        container.appendChild(notification);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+          notification.classList.add("fade-out");
+          setTimeout(() => notification.remove(), 300);
+        }, 5000);
+
+        // Close button handler
+        notification
+          .querySelector(".notification-close")
+          .addEventListener("click", () => {
+            notification.classList.add("fade-out");
+            setTimeout(() => notification.remove(), 300);
+          });
+      }
+
+      // Store chart instances
+      let productivityChart = null;
+      let categoryChart = null;
+      let timeSeriesChart = null;
+
+      // Common chart options
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 500,
+        },
+        plugins: {
+          legend: {
+            position: "top",
+          },
+        },
+        layout: {
+          padding: {
+            top: 10,
+            right: 10,
+            bottom: 10,
+            left: 10,
+          },
+        },
+      };
+
+      // Destroy existing charts before creating new ones
+      function destroyCharts() {
+        if (productivityChart) {
+          productivityChart.destroy();
+        }
+        if (categoryChart) {
+          categoryChart.destroy();
+        }
+        if (timeSeriesChart) {
+          timeSeriesChart.destroy();
+        }
+      }
+
+      function createProductivityChart(data) {
+        const ctx = document
+          .getElementById("productivityChart")
+          .getContext("2d");
+        new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: data.labels,
+            datasets: [
+              {
+                data: data.values,
+                backgroundColor: [
+                  "rgba(75, 192, 192, 0.8)",
+                  "rgba(255, 99, 132, 0.8)",
+                  "rgba(54, 162, 235, 0.8)",
+                ],
+                borderColor: [
+                  "rgba(75, 192, 192, 1)",
+                  "rgba(255, 99, 132, 1)",
+                  "rgba(54, 162, 235, 1)",
+                ],
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: "bottom",
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    const value = context.raw;
+                    const total = context.dataset.data.reduce(
+                      (a, b) => a + b,
+                      0
+                    );
+                    const percentage = ((value / total) * 100).toFixed(1);
+                    return `${context.label}: ${value.toFixed(
+                      1
+                    )}h (${percentage}%)`;
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function createCategoryChart(data) {
+        const ctx = document.getElementById("categoryChart").getContext("2d");
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: data.categories,
+            datasets: [
+              {
+                data: data.values,
+                backgroundColor: "rgba(54, 162, 235, 0.8)",
+                borderColor: "rgba(54, 162, 235, 1)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false,
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    return `${context.raw.toFixed(1)} hours`;
+                  },
+                },
+              },
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: "Hours",
+                },
+              },
+              y: {
+                ticks: {
+                  callback: function (value) {
+                    const label = this.getLabelForValue(value);
+                    // Truncate long labels
+                    return label.length > 15
+                      ? label.substr(0, 15) + "..."
+                      : label;
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function createTimeSeriesChart(data) {
+        const ctx = document.getElementById("timeSeriesChart").getContext("2d");
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: data.timestamps,
+            datasets: [
+              {
+                label: "Hours",
+                data: data.values,
+                fill: true,
+                backgroundColor: "rgba(75, 192, 192, 0.2)",
+                borderColor: "rgba(75, 192, 192, 1)",
+                tension: 0.4,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false,
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    return `${context.raw.toFixed(1)} hours`;
+                  },
+                },
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: "Hours",
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function updateTimeStats(data) {
+        // Update the time statistics
+        document.getElementById("totalTime").textContent = formatTime(
+          data.totalTime
+        );
+        document.getElementById("productiveTime").textContent = formatTime(
+          data.productiveTime
+        );
+        document.getElementById("unproductiveTime").textContent = formatTime(
+          data.unproductiveTime
+        );
+      }
+
+      function formatTime(hours) {
+        if (hours === 0) return "0h 0m";
+        const h = Math.floor(hours);
+        const m = Math.round((hours - h) * 60);
+        return `${h}h ${m}m`;
+      }
+
+      function fetchDataByRange() {
+        const startDate = document.getElementById("startDate").value;
+        const endDate = document.getElementById("endDate").value;
+
+        if (!startDate || !endDate) {
+          showNotification("Please select both start and end dates", "error");
+          return;
+        }
+
+        fetch("/api/activities/range", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            startDate: startDate,
+            endDate: endDate,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              showNotification(data.error, "error");
+              return;
+            }
+
+            // Update time statistics
+            updateTimeStats(data);
+
+            // Update charts
+            createProductivityChart(data.productivity);
+            createCategoryChart(data.categories);
+            createTimeSeriesChart(data.timeSeries);
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showNotification("Error fetching data", "error");
+          });
+      }
+
+      async function cleanupBackups() {
+        const keepDays = document.getElementById("keepDays").value;
+        try {
+          const response = await fetch("/api/cleanup-backups", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ keep_days: parseInt(keepDays) }),
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            showNotification(
+              `Successfully cleaned up backups older than ${keepDays} days`,
+              "success"
+            );
+          } else {
+            showNotification(result.message, "error");
+          }
+        } catch (error) {
+          showNotification(
+            "Error cleaning up backups: " + error.message,
+            "error"
+          );
+        }
+      }
+
+      // Load today's data by default
+      document.addEventListener("DOMContentLoaded", function () {
+        const today = new Date().toISOString().split("T")[0];
+        document.getElementById("startDate").value = today;
+        document.getElementById("endDate").value = today;
+        fetchDataByRange();
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+flask==3.0.2
+plotly==5.18.0
+pandas>=2.0.0
+psutil>=5.9.0
+rich==13.7.0
+python-dateutil==2.8.2
+PyQt6>=6.6.0
+PyQt6-Charts>=6.6.0
+pywin32>=305; platform_system == "Windows"
+darkdetect>=0.8.0
+qt-material>=2.14 
