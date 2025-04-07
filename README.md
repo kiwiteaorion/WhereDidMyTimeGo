@@ -20,8 +20,8 @@ A powerful and intuitive time tracking application that helps you understand how
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/where-did-my-time-go.git
-cd where-did-my-time-go
+git clone https://github.com/yourusername/WhereDidMyTimeGo.git
+cd WhereDidMyTimeGo
 ```
 
 2. Install dependencies:
@@ -70,7 +70,7 @@ python main.py
 ### Project Structure
 
 ```
-where-did-my-time-go/
+WhereDidMyTimeGo/
 ├── gui/                    # GUI-related code
 │   ├── main_window.py     # Main window implementation
 │   └── style.qss         # QSS styles
@@ -91,13 +91,13 @@ where-did-my-time-go/
 
 ## Versioning 📌
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/yourusername/where-did-my-time-go/tags).
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/kiwiteaorion/WhereDidMyTimeGo/tags).
 
 Current version: 1.0.0
 
 ## Authors 👥
 
-- **Your Name** - _Initial work_
+- kiwiteaorion - _Initial work_
 
 ## License 📄
 
